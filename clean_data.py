@@ -98,3 +98,9 @@ commit_history.groupby(by=['FILETYPE', 'COLUMNS']).size()
 # Final Data
 data = pd.concat(list(commit_history['DATA']))
 
+zcta_info = data[['MODIFIED_ZCTA', 'NEIGHBORHOOD_NAME', 'BOROUGH_GROUP', 'DATA_DATE']].dropna()
+# Taking the most recent nieghborbhood name and borough group
+zcta_info = zcta_info.sort_values('DATA_DATE', ascending=False)
+zcta_data = zcta_data[['MODIFIED_ZCTA', 'NEIGHBORHOOD_NAME', 'BOROUGH_GROUP']].drop_duplicates('MODIFIED_ZCTA')
+data = data[[x for x in data if x not in ['NEIGHBORHOOD_NAME', 'BOROUGH_GROUP']]]
+data = pd.merge(left=data, right=zcta_data, how='left')
