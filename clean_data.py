@@ -15,8 +15,25 @@ import pandas as pd
 pd.options.display.max_columns = 20
 from git import Repo
 
-def read_all_zcta_data():
-    data_dir = '../coronavirus-data/'
+def read_all_zcta_data(data_dir = '../coronavirus-data/', historical_data_dir = 'historical_data/'):
+    '''
+    Read all the historical zcta data
+
+    Parameters
+    ----------
+    data_dir : str, optional
+        Folderpath to the coronavirus-data repository. The default is 
+        '../coronavirus-data/'.
+    historical_data_dir : str, optional
+        Folderpath to the historical data. The default is 'historical_data/'.
+
+    Returns
+    -------
+    data : pandas.DataFrame
+        Formatted DataFrame of all historical data along with timestamps of
+        when the data was created.
+
+    '''
     repo = Repo(data_dir)
     
     commit_history = pd.DataFrame({'GIT_COMMIT': repo.iter_commits()})
@@ -42,7 +59,7 @@ def read_all_zcta_data():
     
     # Get the file names
     historical_data = pd.DataFrame({'FILENAME': os.listdir('historical_data')})
-    historical_data['FILEPATH'] = 'historical_data/' + historical_data['FILENAME']
+    historical_data['FILEPATH'] = historical_data_dir + historical_data['FILENAME']
     historical_data['COMMIT_FIRST7'] = historical_data['FILENAME'].str.split('.').str[-2]
     historical_data['FILETYPE'] = historical_data['FILENAME'].str.split('.').str[0]
     # If data-by-modzcta and tests-by-zcta show up on the same commit, choose data-by-modzcta
@@ -119,7 +136,6 @@ def datestring2020_to_datetime(x):
     date = datetime.datetime.strptime(x, '%m/%d')
     date = datetime.datetime(2020, date.month, date.day)
     return date
-
 
 
 
