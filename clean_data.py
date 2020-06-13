@@ -14,8 +14,6 @@ New dadta doesn't have this, so we create it using
 TOTAL = 100*COVID_CASE_COUNT/PERCENT_POSITIVE
 
 """
-
-# TODO: Get a date date onto the data
 # TODO: Fill in NEIGHBORHOOD_NAME and BOROUGH_GROUP when possible
 
 import datetime, os
@@ -64,9 +62,9 @@ historical_data = historical_data.drop_duplicates('COMMIT_FIRST7')
 # Attach the filepath to the commit history
 commit_history = pd.merge(left=historical_data, right=commit_history, on='COMMIT_FIRST7')
 
-def read_zcta_data(filepath):
+def read_zcta_data(filepath, data_date):
     '''
-    Get formatted version of the data
+    Get formatted version of the zcta data.
 
     Parameters
     ----------
@@ -87,8 +85,11 @@ def read_zcta_data(filepath):
                                   'MODZCTA': 'MODIFIED_ZCTA'})
     if 'TOTAL' not in data:
         data['TOTAL'] = (100*data['COVID_CASE_COUNT']/data['PERCENT_POSITIVE']).apply(lambda x: round(x) if pd.notnull(x) else x)
+        
+    data['DATA_DATE'] = data_date
     return data
-commit_history['DATA'] = commit_history['FILEPATH'].apply(read_zcta_data)
+
+commit_history['DATA'] = commit_history.apply(lambda x: read_zcta_data(x['FILEPATH'], x['DATA_DATE']), axis=1)
 commit_history['COLUMNS'] = commit_history['DATA'].apply(lambda x: tuple(sorted(x)))
 
 
