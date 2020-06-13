@@ -104,3 +104,11 @@ zcta_info = zcta_info.sort_values('DATA_DATE', ascending=False)
 zcta_data = zcta_data[['MODIFIED_ZCTA', 'NEIGHBORHOOD_NAME', 'BOROUGH_GROUP']].drop_duplicates('MODIFIED_ZCTA')
 data = data[[x for x in data if x not in ['NEIGHBORHOOD_NAME', 'BOROUGH_GROUP']]]
 data = pd.merge(left=data, right=zcta_data, how='left')
+
+# The POP_DENOMINATOR is the same for all the csvs
+pop_denominator = data[['MODIFIED_ZCTA', 'POP_DENOMINATOR']].drop_duplicates()
+pop_denominator = pop_denominator[pop_denominator['POP_DENOMINATOR'].notnull()]
+assert((~pop_denominator['MODIFIED_ZCTA'].duplicated()).all())
+data = data[[x for x in data if x!='POP_DENOMINATOR']]
+data = pd.merge(left=data, right=pop_denominator, on='MODIFIED_ZCTA', how='left')
+
