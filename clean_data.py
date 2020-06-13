@@ -15,4 +15,4 @@ commit_history = pd.DataFrame({'GIT_COMMIT': repo.iter_commits()})
 commit_history['COMMIT'] = commit_history['GIT_COMMIT'].astype(str)
 commit_history['COMMIT_FIRST7'] = commit_history['COMMIT'].str[:7]
 commit_history['MESSAGE'] = commit_history['GIT_COMMIT'].apply(lambda x: x.message)
-
+commit_history['COMMITED_DATETIME'] = commit_history['GIT_COMMIT'].apply(lambda x: x.committed_datetime)
