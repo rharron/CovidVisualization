@@ -64,6 +64,8 @@ def read_all_zcta_data(data_dir = '../coronavirus-data/', historical_data_dir = 
     hist_data_files = os.listdir(historical_data_dir)
     hist_data_files.sort()
     historical_data = pd.DataFrame({'FILENAME': hist_data_files})
+    # Only keep the relevant files
+    historical_data = historical_data[historical_data['FILENAME'].str.contains('^(data-by-modzcta|tests-by-zcta)\.csv\.[0-9]{3}\..{7}\.csv$')]
     historical_data['FILEPATH'] = historical_data_dir + historical_data['FILENAME']
     historical_data['COMMIT_FIRST7'] = historical_data['FILENAME'].str.split('.').str[-2]
     historical_data['FILETYPE'] = historical_data['FILENAME'].str.split('.').str[0]
