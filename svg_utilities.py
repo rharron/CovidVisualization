@@ -36,7 +36,7 @@ double_zips = {
     }
 
 #Temporarily hardcode these
-max_rate = 4429.24
+#max_rate = 4429.24
 min_rate = 551.01
 
 def rgb1to256(rgb1):
@@ -86,7 +86,7 @@ def generate_svg_from_data_by_modzcta(filename):
                 if i == len(ZCTA_fields) - 1:
                     out = out[:-2] + "\"\n"
                 outfile.write(out)
-                print(out)
+                #print(out)
             rate = zcta_data.loc[zcta]['COVID_CASE_RATE']
             rate01 = rate / max_rate
             this_rgb = rgb1to256(plt.cm.rainbow(rate01))
@@ -99,3 +99,58 @@ def generate_svg_from_data_by_modzcta(filename):
         outfile.write(template_out)
         template_file.close()
     return
+
+def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', max_rate = 4429.24):
+    # Set output filename based on 'DATA_DATE" value (there should only be one)
+    rgb_re = re.compile('rgb\([0-9]*, [0-9]*, [0-9]*\)')
+    filename =  filename_prefix + "_" + plot_field + "_" + zcta_data['DATA_DATE'].iloc[0].strftime("%Y-%m-%d-%H-%M-%S") + ".svg"
+    with open(filename, 'w') as outfile:
+        template_file = open('template.svg', 'r')
+        template_out = template_file.readline()
+        outfile.write(template_out)
+        zips = zcta_data['MODIFIED_ZCTA']
+        zcta_data = zcta_data.set_index('MODIFIED_ZCTA')
+        for zcta in zips:
+            #this_row = zcta_data[zcta_data['MODIFIED_ZCTA']==zcta]
+            field = ZCTA_fields[0]
+            out = "<path aria-label=\"" + field + ": %s"%(zcta_data.loc[zcta][fields_to_data_by_modzcta_dict[field]]) + ";\n"
+            outfile.write(out)
+            out = "\tZIP Code: %s;\n"%(double_zips[zcta] if zcta in double_zips else zcta)
+            outfile.write(out)
+            for i in range(2, len(ZCTA_fields)):
+                field = ZCTA_fields[i]
+                out = "\t" + field + ": %s"%(zcta_data.loc[zcta][fields_to_data_by_modzcta_dict[field]]) + ";\n"
+                if i == len(ZCTA_fields) - 1:
+                    out = out[:-2] + "\"\n"
+                outfile.write(out)
+                #print(out)
+            rate = zcta_data.loc[zcta][plot_field]
+            rate01 = rate / max_rate
+            this_rgb = rgb1to256(plt.cm.rainbow(rate01))
+            #print(this_rgb)
+            template_out = template_file.readline()
+            template_out = rgb_re.sub("rgb%s"%(this_rgb,), template_out)
+            #print(template_out)
+            outfile.write(template_out)
+        template_out = template_file.readline()
+        outfile.write(template_out)
+        template_file.close()
+    return
+    
+def generate_multiple_svgs_from_one_dataframe(data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', verbose=True):
+    data.dropna(subset=['MODIFIED_ZCTA'], inplace=True)
+    data = data.astype({'MODIFIED_ZCTA' : int})
+    max_rate = data[plot_field].max()
+    for date in data.DATA_DATE.drop_duplicates():
+        if verbose:
+            print(date)
+        generate_svg_from_day_dataframe(data[data['DATA_DATE']==date], plot_field=plot_field, filename_prefix=filename_prefix)
+    return
+
+
+        
+        
+        
+        
+        
+        
