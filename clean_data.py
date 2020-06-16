@@ -108,6 +108,12 @@ def read_all_zcta_data(data_dir = '../coronavirus-data/', historical_data_dir = 
     # The COVID_CASE_RATE field is NaN for the older data, too
     # Compute it and attach it.
     data['COVID_CASE_RATE'].fillna(100000 * data['COVID_CASE_COUNT'] / data['POP_DENOMINATOR'], inplace=True)
+    
+    # Fine cleaning the data
+    # Two dates have an extra 99999 ZCTA
+    data.drop(data[data['MODIFIED_ZCTA']==99999].index, inplace=True)
+    # 2020-04-10 has extra copy of previous day's data for ZCTA 11697
+    data.drop(data[(data['DATA_DATE']=="2020-04-10") & (data['MODIFIED_ZCTA']==11697) & (data['COVID_CASE_COUNT']==52)].index, inplace=True)
 
     return data
 
