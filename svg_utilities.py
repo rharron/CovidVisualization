@@ -101,46 +101,72 @@ def generate_svg_from_data_by_modzcta(filename):
     return
 
 def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', max_rate = 4429.24):
-    # Set output filename based on 'DATA_DATE" value (there should only be one)
+    # Prepare a regex for later subbing
     rgb_re = re.compile('rgb\([0-9]*, [0-9]*, [0-9]*\)')
-    filename =  filename_prefix + "_" + plot_field + "_" + zcta_data['DATA_DATE'].iloc[0].strftime("%Y-%m-%d-%H-%M-%S") + ".svg"
+    
+    # Set output filename based on 'DATA_DATE" value (there should only be one)
+    date = zcta_data['DATA_DATE'].iloc[0]
+    filename =  filename_prefix + "_" + plot_field + "_" + date.strftime("%Y-%m-%d-%H-%M-%S") + ".svg"
+    
     with open(filename, 'w') as outfile:
+        # Open the svg template file and write out the initial segment
         template_file = open('template.svg', 'r')
         template_out = template_file.readline()
         outfile.write(template_out)
+        
+        # For each ZCTA, write out an aria-label with relevant data
+        # and then the corresponding template block with this date's rgb value
         zips = zcta_data['MODIFIED_ZCTA']
         zcta_data = zcta_data.set_index('MODIFIED_ZCTA')
         for zcta in zips:
-            #this_row = zcta_data[zcta_data['MODIFIED_ZCTA']==zcta]
+            # First two data fields need custom handling
             field = ZCTA_fields[0]
             out = "<path aria-label=\"" + field + ": %s"%(zcta_data.loc[zcta][fields_to_data_by_modzcta_dict[field]]) + ";\n"
             outfile.write(out)
             out = "\tZIP Code: %s;\n"%(double_zips[zcta] if zcta in double_zips else zcta)
             outfile.write(out)
+            
+            # Process and write out the remaining data fields
             for i in range(2, len(ZCTA_fields)):
                 field = ZCTA_fields[i]
                 out = "\t" + field + ": %s"%(zcta_data.loc[zcta][fields_to_data_by_modzcta_dict[field]]) + ";\n"
                 if i == len(ZCTA_fields) - 1:
                     out = out[:-2] + "\"\n"
                 outfile.write(out)
-                #print(out)
+                
+            # Compute rgb value based on plotted field's value
             rate = zcta_data.loc[zcta][plot_field]
             rate01 = rate / max_rate
             this_rgb = rgb1to256(plt.cm.rainbow(rate01))
-            #print(this_rgb)
             template_out = template_file.readline()
+            # Update template's rgb value with computed one
             template_out = rgb_re.sub("rgb%s"%(this_rgb,), template_out)
-            #print(template_out)
             outfile.write(template_out)
+        
+        # Write out end segment of the file from the template, adding in date info
         template_out = template_file.readline()
+        date_str = "Date: %s"%(date.strftime("%b %-d, %Y"))
+        legend_title = "><tspan x=\"0\" dy=\"-1.2em\">"+ date_str + "</tspan><tspan x=\"0\" dy=\"1.4em\">Case Rate per 100k</tspan>"
+        template_out = re.sub(">Case Rate per 100k", legend_title, template_out)
+        legend_title = "\'" + date_str + "; Case Rate per 100k"
+        template_out = re.sub("\'Case Rate per 100k", legend_title, template_out)
         outfile.write(template_out)
         template_file.close()
     return
     
 def generate_multiple_svgs_from_one_dataframe(data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', verbose=True):
+    # Sample usage:
+    # data = clean_data.read_all_zcta_data()
+    # svg_utilities.generate_multiple_svgs_from_one_dataframe(data)
+    
+    # Earlier data contains an NA ZCTA, drop those and convert all ZCTA to ints
     data.dropna(subset=['MODIFIED_ZCTA'], inplace=True)
     data = data.astype({'MODIFIED_ZCTA' : int})
+    
+    # Get max value of the field being plotted
     max_rate = data[plot_field].max()
+    
+    # Make an svg for each date
     for date in data.DATA_DATE.drop_duplicates():
         if verbose:
             print(date)
