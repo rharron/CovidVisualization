@@ -104,6 +104,10 @@ def read_all_zcta_data(data_dir = '../coronavirus-data/', historical_data_dir = 
     data = data[[x for x in data if x!='POP_DENOMINATOR']]
     # Attach POP_DENOMINATOR to all the data
     data = pd.merge(left=data, right=pop_denominator, on='MODIFIED_ZCTA', how='left')
+    
+    # The COVID_CASE_RATE field is NaN for the older data, too
+    # Compute it and attach it.
+    data['COVID_CASE_RATE'].fillna(100000 * data['COVID_CASE_COUNT'] / data['POP_DENOMINATOR'], inplace=True)
 
     return data
 
