@@ -114,8 +114,8 @@ def read_all_zcta_data(data_dir = '../coronavirus-data/', historical_data_dir = 
     data.drop(data[data['MODIFIED_ZCTA']==99999].index, inplace=True)
     # 2020-04-10 has extra copy of previous day's data for ZCTA 11697
     data.drop(data[(data['DATA_DATE']=="2020-04-10") & (data['MODIFIED_ZCTA']==11697) & (data['COVID_CASE_COUNT']==52)].index, inplace=True)
-    # Drop data on 2020-04-27
-    data = data[data['DATA_DATE']!='2020-04-27']
+    # Drop data on 2020-04-26
+    data = data[data['DATA_DATE']!='2020-04-26']
     
     return data
 
