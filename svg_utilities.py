@@ -42,15 +42,38 @@ min_rate = 551.01
 def rgb1to256(rgb1):
     return tuple(np.ceil(256 * c).astype('int') - 1 for c in rgb1[:3])
 
-def initalize_template_file():
-    #Only need to run this once
-    with open("template.svg", 'w') as outfile:
+def initalize_template_file(colormap='rainbow'):
+    # Only need to run this once per colormap
+    
+    # Some regex used in creating the legend
+    offset_re = re.compile("\".*?\"")
+    rgb_re = re.compile('rgb\([0-9]*, [0-9]*, [0-9]*\)')
+    
+    with open("template_" + colormap + ".svg", 'w') as outfile:
+        # Get nychealth's map file, it's all one line
         map_file = open('NYCmap06-12.svg', 'r')
-        for LINE in map_file:
-            break
+        LINE = map_file.readline()
         map_file.close()
+        
+        # Break it up into segments based on ZCTA
         tokens = LINE.split("<path aria-label=")
-        outfile.write(tokens[0] + "\n")
+        
+        # Adjust the legend colours in the initial segment
+        cm = eval("plt.cm." + colormap)
+        header_delim = "<stop offset="
+        header_tokens = tokens[0].split(header_delim)
+        #outfile.write(header_tokens[0] + "\n")
+        outfile.write(header_tokens[0])
+        step = 1/21
+        for i in range(22):
+            val = step * i
+            this_rgb = rgb1to256(cm(val))
+            header_tokens[i+1] = header_delim + rgb_re.sub("rgb%s"%(this_rgb,), offset_re.sub("\"%s\""%(val), header_tokens[i+1], 1), 1)
+            #outfile.write(header_tokens[i+1] + "\n")
+            if i == 21:
+                header_tokens[i+1] += "\n"
+            outfile.write(header_tokens[i+1])
+        #outfile.write(tokens[0] + "\n")
         delim = 'role='
         for token in tokens[1:-1]:
             outfile.write(delim + token.split(delim)[1] + "\n")
@@ -60,7 +83,7 @@ def initalize_template_file():
         outfile.write(endgame)
     return
 
-def generate_svg_from_data_by_modzcta(filename):
+def generate_svg_from_data_by_modzcta(filename, colormap='rainbow'):
     #Sample usage
     #generate_svg_from_data_by_modzcta("historical_data/data-by-modzcta.csv.001.b92f6e5.csv")
     with open(filename + ".svg", 'w') as outfile:
@@ -68,7 +91,8 @@ def generate_svg_from_data_by_modzcta(filename):
         infile = open(filename, 'r')
         zcta_data = pandas.read_csv(infile)
         infile.close()
-        template_file = open('template.svg', 'r')
+        cm = eval("plt.cm." + colormap)
+        template_file = open('template_' + colormap + '.svg', 'r')
         template_out = template_file.readline()
         outfile.write(template_out)
         zips = zcta_data['MODIFIED_ZCTA']
@@ -89,7 +113,7 @@ def generate_svg_from_data_by_modzcta(filename):
                 #print(out)
             rate = zcta_data.loc[zcta]['COVID_CASE_RATE']
             rate01 = rate / max_rate
-            this_rgb = rgb1to256(plt.cm.rainbow(rate01))
+            this_rgb = rgb1to256(cm(rate01))
             #print(this_rgb)
             template_out = template_file.readline()
             template_out = rgb_re.sub("rgb%s"%(this_rgb,), template_out)
@@ -100,9 +124,12 @@ def generate_svg_from_data_by_modzcta(filename):
         template_file.close()
     return
 
-def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', max_rate = 4429.24):
+def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', max_rate = 4429.24, colormap='rainbow'):
     # Prepare a regex for later subbing
     rgb_re = re.compile('rgb\([0-9]*, [0-9]*, [0-9]*\)')
+    
+    # Get colormap from argument
+    cm = eval("plt.cm." + colormap)
     
     # Set output filename based on 'DATA_DATE" value (there should only be one)
     date = zcta_data['DATA_DATE'].iloc[0]
@@ -110,7 +137,7 @@ def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', fil
     
     with open(filename, 'w') as outfile:
         # Open the svg template file and write out the initial segment
-        template_file = open('template.svg', 'r')
+        template_file = open('template_' + colormap + '.svg', 'r')
         template_out = template_file.readline()
         outfile.write(template_out)
         
@@ -137,7 +164,7 @@ def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', fil
             # Compute rgb value based on plotted field's value
             rate = zcta_data.loc[zcta][plot_field]
             rate01 = rate / max_rate
-            this_rgb = rgb1to256(plt.cm.rainbow(rate01))
+            this_rgb = rgb1to256(cm(rate01))
             template_out = template_file.readline()
             # Update template's rgb value with computed one
             template_out = rgb_re.sub("rgb%s"%(this_rgb,), template_out)
@@ -154,7 +181,7 @@ def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', fil
         template_file.close()
     return
     
-def generate_multiple_svgs_from_one_dataframe(data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', verbose=True):
+def generate_multiple_svgs_from_one_dataframe(data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', colormap='rainbow', verbose=True):
     # Sample usage:
     # data = clean_data.read_all_zcta_data()
     # svg_utilities.generate_multiple_svgs_from_one_dataframe(data)
@@ -170,7 +197,7 @@ def generate_multiple_svgs_from_one_dataframe(data, plot_field='COVID_CASE_RATE'
     for date in data.DATA_DATE.drop_duplicates():
         if verbose:
             print(date)
-        generate_svg_from_day_dataframe(data[data['DATA_DATE']==date], plot_field=plot_field, filename_prefix=filename_prefix)
+        generate_svg_from_day_dataframe(data[data['DATA_DATE']==date], plot_field=plot_field, filename_prefix=filename_prefix, max_rate=max_rate, colormap=colormap)
     return
 
 
