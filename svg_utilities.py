@@ -125,15 +125,17 @@ def generate_svg_from_data_by_modzcta(filename, colormap='rainbow'):
     return
 
 def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', max_rate = 4429.24, colormap='rainbow'):
+    ### TODO: write the correct min and max in the legend
+    
     # Prepare a regex for later subbing
     rgb_re = re.compile('rgb\([0-9]*, [0-9]*, [0-9]*\)')
     
     # Get colormap from argument
     cm = eval("plt.cm." + colormap)
     
-    # Set output filename based on 'DATA_DATE" value (there should only be one)
+    # Set output filename based on colormap and 'DATA_DATE" value (there should only be one)
     date = zcta_data['DATA_DATE'].iloc[0]
-    filename =  filename_prefix + "_" + plot_field + "_" + date.strftime("%Y-%m-%d-%H-%M-%S") + ".svg"
+    filename =  filename_prefix + "_" + plot_field + "_" + colormap + "_" + date.strftime("%Y-%m-%d-%H-%M-%S") + ".svg"
     
     with open(filename, 'w') as outfile:
         # Open the svg template file and write out the initial segment
