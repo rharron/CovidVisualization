@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+import locale
 
 import pandas
 import matplotlib.pyplot as plt
@@ -124,11 +125,11 @@ def generate_svg_from_data_by_modzcta(filename, colormap='rainbow'):
         template_file.close()
     return
 
-def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', max_rate = 4429.24, colormap='rainbow'):
-    ### TODO: write the correct min and max in the legend
-    
-    # Prepare a regex for later subbing
+def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', min_rate=551, max_rate = 4429.24, colormap='rainbow'):
+    # Preparations for later use
     rgb_re = re.compile('rgb\([0-9]*, [0-9]*, [0-9]*\)')
+    delta_values = max_rate - min_rate
+    locale.setlocale(locale.LC_ALL, '')
     
     # Get colormap from argument
     cm = eval("plt.cm." + colormap)
@@ -165,20 +166,25 @@ def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', fil
                 
             # Compute rgb value based on plotted field's value
             rate = zcta_data.loc[zcta][plot_field]
-            rate01 = rate / max_rate
+            rate01 = (rate - min_rate) / delta_values
             this_rgb = rgb1to256(cm(rate01))
             template_out = template_file.readline()
             # Update template's rgb value with computed one
             template_out = rgb_re.sub("rgb%s"%(this_rgb,), template_out)
             outfile.write(template_out)
         
-        # Write out end segment of the file from the template, adding in date info
+        # Write out end segment of the file from the template, adding in date and max-min info
         template_out = template_file.readline()
         date_str = "Date: %s"%(date.strftime("%b %-d, %Y"))
         legend_title = "><tspan x=\"0\" dy=\"-1.2em\">"+ date_str + "</tspan><tspan x=\"0\" dy=\"1.4em\">Case Rate per 100k</tspan>"
         template_out = re.sub(">Case Rate per 100k", legend_title, template_out)
         legend_title = "\'" + date_str + "; Case Rate per 100k"
         template_out = re.sub("\'Case Rate per 100k", legend_title, template_out)
+        minstr = locale.format_string("%.2f", min_rate, grouping=True)
+        maxstr = locale.format_string("%.2f", max_rate, grouping=True)
+        template_out = template_out.replace("551 to 4,429", minstr + " to " + maxstr)
+        template_out = template_out.replace("551<", minstr + "<")
+        template_out = template_out.replace("4,429<", maxstr + "<")
         outfile.write(template_out)
         template_file.close()
     return
@@ -194,12 +200,13 @@ def generate_multiple_svgs_from_one_dataframe(data, plot_field='COVID_CASE_RATE'
     
     # Get max value of the field being plotted
     max_rate = data[plot_field].max()
+    min_rate = data[plot_field].min()
     
     # Make an svg for each date
     for date in data.DATA_DATE.drop_duplicates():
         if verbose:
             print(date)
-        generate_svg_from_day_dataframe(data[data['DATA_DATE']==date], plot_field=plot_field, filename_prefix=filename_prefix, max_rate=max_rate, colormap=colormap)
+        generate_svg_from_day_dataframe(data[data['DATA_DATE']==date], plot_field=plot_field, filename_prefix=filename_prefix, min_rate=min_rate, max_rate=max_rate, colormap=colormap)
     return
 
 
