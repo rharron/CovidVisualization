@@ -10,12 +10,13 @@ conda install -c conda-forge gitpython
 
 """
 
-import datetime, os
+import datetime
+from io import StringIO
 import pandas as pd
-pd.options.display.max_columns = 20
 from git import Repo
+from git import GitCommandError
 
-def read_all_zcta_data(data_dir = '../coronavirus-data/', historical_data_dir = 'historical_data/'):
+def read_all_zcta_data(data_dir = '../coronavirus-data/'):
     '''
     Read all the historical zcta data
 
@@ -24,8 +25,6 @@ def read_all_zcta_data(data_dir = '../coronavirus-data/', historical_data_dir = 
     data_dir : str, optional
         Folderpath to the coronavirus-data repository. The default is 
         '../coronavirus-data/'.
-    historical_data_dir : str, optional
-        Folderpath to the historical data. The default is 'historical_data/'.
 
     Returns
     -------
@@ -59,27 +58,9 @@ def read_all_zcta_data(data_dir = '../coronavirus-data/', historical_data_dir = 
     commit_history = commit_history.sort_values('COMMITTED_DATETIME', ascending=False)
     commit_history = commit_history.drop_duplicates('DATA_DATE')
     
-    # Get the file names along with information on how to tie them back to the 
-    # commits
-    hist_data_files = os.listdir(historical_data_dir)
-    hist_data_files.sort()
-    historical_data = pd.DataFrame({'FILENAME': hist_data_files})
-    # Only keep the relevant files
-    historical_data = historical_data[historical_data['FILENAME'].str.contains('^(data-by-modzcta|tests-by-zcta)\.csv\.[0-9]{3}\..{7}\.csv$')]
-    historical_data['FILEPATH'] = historical_data_dir + historical_data['FILENAME']
-    historical_data['COMMIT_FIRST7'] = historical_data['FILENAME'].str.split('.').str[-2]
-    historical_data['FILETYPE'] = historical_data['FILENAME'].str.split('.').str[0]
-    
-    # If data-by-modzcta and tests-by-zcta show up on the same commit, choose 
-    # data-by-modzcta
-    historical_data = historical_data.sort_values('FILETYPE')
-    historical_data = historical_data.drop_duplicates('COMMIT_FIRST7')
-    
-    # Attach the filepath to the commit history
-    commit_history = pd.merge(left=historical_data, right=commit_history, on='COMMIT_FIRST7')
-    
-    # Read all the csvs as pandas DataFrames
-    commit_history['DATA'] = commit_history.apply(lambda x: read_zcta_data(x['FILEPATH'], x['DATA_DATE']), axis=1)
+    # Obtain the data from the git repo, only for dates where it exists
+    commit_history = commit_history[commit_history['DATA_DATE'] >= '2020-04-01']
+    commit_history['DATA'] = commit_history.apply(lambda x: read_zcta_data_from_git(repo, x['COMMIT_FIRST7'], x['DATA_DATE']), axis=1)
     
     # Final Data
     data = pd.concat(list(commit_history['DATA']))
@@ -119,28 +100,39 @@ def read_all_zcta_data(data_dir = '../coronavirus-data/', historical_data_dir = 
     
     return data
 
-def read_zcta_data(filepath, data_date):
+def read_zcta_data_from_git(repo, commit7, data_date):
     '''
-    Get formatted version of the zcta data.
+    Get formatted version of the zcta data using gitpython.
     
     100*COVID_CASE_COUNT/TOTAL = PERCENT_POSITIVE
 
     New data doesn't have this, so we create it using
     TOTAL = 100*COVID_CASE_COUNT/PERCENT_POSITIVE
 
-
     Parameters
     ----------
-    filepath : str
-        Path to the file to read
+    repo : git.Repo
+        The git repo from which to retrieve zcta data.
+    
+    commit7 : str
+        First 7 characters of the hash of the commit from which to retrieve
+        zcta data.
+        
+    data_date : pandas.Timestamp
+        Date of the commit referred to by commit7.
 
     Returns
     -------
-    data : pandas.DataFrame
-        Standardized version of the data
+    data : pandas.DataFrame.
+        Standardized version of the retrieved data.
 
     '''
-    data = pd.read_csv(filepath)
+    # First try to get data from data-by-modzcta.csv. If it's not there, get
+    # it from tests-by-zcta.csv
+    try:
+        data = pd.read_csv(StringIO(repo.git.show(commit7 + ':./data-by-modzcta.csv')))
+    except GitCommandError:
+        data = pd.read_csv(StringIO(repo.git.show(commit7 + ':./tests-by-zcta.csv')))
     data.columns = data.columns.str.upper()
     data = data.rename(columns = {'POSITIVE': 'COVID_CASE_COUNT', 
                                   'ZCTA_CUM.PERC_POS': 'PERCENT_POSITIVE',
@@ -163,7 +155,3 @@ def datestring2020_to_datetime(x):
     date = datetime.datetime.strptime(x, '%m/%d')
     date = datetime.datetime(2020, date.month, date.day)
     return date
-
-
-
-
