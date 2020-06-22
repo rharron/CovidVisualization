@@ -5,7 +5,6 @@ import re
 import locale
 
 import pandas
-import matplotlib.pyplot as plt
 import numpy as np
 
 ZCTA_fields = ['Case Rate per 100k',
