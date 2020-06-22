@@ -3,20 +3,12 @@
 # get_all_versions filename
 # Adapted from stackoverflow.com/users/26510/brad-parks
 
-IFS=$'\n'
-commits=($(git log --date=iso --pretty=format:"%ad %h" "$1"))
-nbCommits=${#commits[*]}
-unset IFS
-
 index=1
+
 file=$1
-for commit in "${commits[@]}"
+for commit in $(git log --pretty=format:"%h" "$1")
 do
-  read -a commithash <<< "$commit"
-  commithash="${commithash[3]}"
-  commitstr=${commit// /_}
-  commitstr=${commitstr//:/-}
-  out="$1.$(printf %03d "$((nbCommits - index))").$commitstr.${file##*.}"
-  git show "$commithash:./$1" > "$out"
+  out="$1.$(printf %03d "$index").$commit.${file##*.}"
+  git show "$commit:./$1" > "$out"
   let index++
 done
