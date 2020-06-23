@@ -17,6 +17,8 @@ import pandas as pd
 import svg_utilities
 import clean_data
 
+svg_utilities.initalize_template_file(colormap='coolwarm')
+
 #Set this to a different field to plot that field's diffs
 plot_field = 'COVID_CASE_RATE'
 pfd = plot_field + '_DIFF'
@@ -39,9 +41,10 @@ date_indices = data.index.levels[1][data.index.levels[1] >= date1]
 
 # We impose a max_rate threshold below the max and output showing only
 # a handful of data points are beyond the threshhold
-max_rate = 100
+max_rate = 50
+min_rate = -50
 relevant_data = data[data.index.get_level_values(1).isin(date_indices)][pfd]
 print("There are %s data points above the threshhold; they will be cut off"%(len(relevant_data[relevant_data >= max_rate])))
 
 # Generate the svgs
-svg_utilities.mi_generate_multiple_svgs_from_one_dataframe(data.drop(index=date0, level=1), plot_field=pfd, filename_prefix=pfd + '/NYC', colormap='Spectral_r', dates=date_indices, max_rate=max_rate, verbose=True)
+svg_utilities.mi_generate_multiple_svgs_from_one_dataframe(data.drop(index=date0, level=1), plot_field=pfd, legend_title='Change in Covid Case Rate per 100k', filename_prefix=pfd + '/NYC', colormap='coolwarm', dates=date_indices, min_rate=min_rate, max_rate=max_rate, verbose=True)

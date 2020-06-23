@@ -35,10 +35,6 @@ double_zips = {
     11217 : '11217, 11243'
     }
 
-#Temporarily hardcode these
-#max_rate = 4429.24
-min_rate = 551.01
-
 def rgb1to256(rgb1):
     return tuple(np.ceil(256 * c).astype('int') - 1 for c in rgb1[:3])
 
@@ -134,10 +130,10 @@ def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', fil
         # Write out end segment of the file from the template, adding in date and max-min info
         template_out = template_file.readline()
         date_str = "Date: %s"%(date.strftime("%b %-d, %Y"))
-        legend_title = "><tspan x=\"0\" dy=\"-1.2em\">"+ date_str + "</tspan><tspan x=\"0\" dy=\"1.4em\">Case Rate per 100k</tspan>"
-        template_out = re.sub(">Case Rate per 100k", legend_title, template_out)
-        legend_title = "\'" + date_str + "; Case Rate per 100k"
-        template_out = re.sub("\'Case Rate per 100k", legend_title, template_out)
+        legend_title_str = "><tspan x=\"0\" dy=\"-1.2em\">"+ date_str + "</tspan><tspan x=\"0\" dy=\"1.4em\">Case Rate per 100k</tspan>"
+        template_out = re.sub(">Case Rate per 100k", legend_title_str, template_out)
+        legend_title_str = "\'" + date_str + "; Case Rate per 100k"
+        template_out = re.sub("\'Case Rate per 100k", legend_title_str, template_out)
         minstr = locale.format_string("%.2f", min_rate, grouping=True)
         maxstr = locale.format_string("%.2f", max_rate, grouping=True)
         template_out = template_out.replace("551 to 4,429", minstr + " to " + maxstr)
@@ -147,11 +143,13 @@ def generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', fil
         template_file.close()
     return
 
-def mi_generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', min_rate=551, max_rate = 4429.24, colormap='rainbow'):
+def mi_generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', legend_title=None, filename_prefix='NYC', min_rate=551, max_rate = 4429.24, colormap='rainbow'):
     # Preparations for later use
     rgb_re = re.compile('rgb\([0-9]*, [0-9]*, [0-9]*\)')
     delta_values = max_rate - min_rate
     locale.setlocale(locale.LC_ALL, '')
+    if legend_title is None:
+        legend_title = plot_field
     
     # Get colormap from argument
     cm = eval("plt.cm." + colormap)
@@ -198,10 +196,10 @@ def mi_generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', 
         # Write out end segment of the file from the template, adding in date and max-min info
         template_out = template_file.readline()
         date_str = "Date: %s"%(date.strftime("%b %-d, %Y"))
-        legend_title = "><tspan x=\"0\" dy=\"-1.2em\">"+ date_str + "</tspan><tspan x=\"0\" dy=\"1.4em\">Case Rate per 100k</tspan>"
-        template_out = re.sub(">Case Rate per 100k", legend_title, template_out)
-        legend_title = "\'" + date_str + "; Case Rate per 100k"
-        template_out = re.sub("\'Case Rate per 100k", legend_title, template_out)
+        legend_title_str = "><tspan x=\"0\" dy=\"-1.2em\">"+ date_str + "</tspan><tspan x=\"0\" dy=\"1.4em\">" + legend_title + "</tspan>"
+        template_out = re.sub(">Case Rate per 100k", legend_title_str, template_out)
+        legend_title_str = "\'" + date_str + "; " + legend_title
+        template_out = re.sub("\'Case Rate per 100k", legend_title_str, template_out)
         minstr = locale.format_string("%.2f", min_rate, grouping=True)
         maxstr = locale.format_string("%.2f", max_rate, grouping=True)
         template_out = template_out.replace("551 to 4,429", minstr + " to " + maxstr)
@@ -231,7 +229,7 @@ def generate_multiple_svgs_from_one_dataframe(data, plot_field='COVID_CASE_RATE'
         generate_svg_from_day_dataframe(data[data['DATA_DATE']==date], plot_field=plot_field, filename_prefix=filename_prefix, min_rate=min_rate, max_rate=max_rate, colormap=colormap)
     return
 
-def mi_generate_multiple_svgs_from_one_dataframe(data, plot_field='COVID_CASE_RATE', filename_prefix='NYC', colormap='rainbow', dates=None, max_rate=None, verbose=True):
+def mi_generate_multiple_svgs_from_one_dataframe(data, plot_field='COVID_CASE_RATE', legend_title=None, filename_prefix='NYC', colormap='rainbow', dates=None, min_rate=None, max_rate=None, verbose=True):
     # Multiindex version of previous function
     # Assumes clean_data has removed NaN from ZCTA and cast values to ints
     # Sample usage:
@@ -246,26 +244,20 @@ def mi_generate_multiple_svgs_from_one_dataframe(data, plot_field='COVID_CASE_RA
     if dates is None:
         if max_rate is None:
             max_rate = data[plot_field].max()
-        min_rate = data[plot_field].min()
+        if min_rate is None:
+            min_rate = data[plot_field].min()
         dates = data.index.levels[1]
     else:
         relevant_data = data[data.index.get_level_values(1).isin(dates)][plot_field]
         #print(relevant_data)
         if max_rate is None:
             max_rate = relevant_data.max()
-        min_rate = relevant_data.min()
+        if min_rate is None:
+            min_rate = data[plot_field].min()
     
     # Make an svg for each date      
     for date in dates:
         if verbose:
             print(date)
-        mi_generate_svg_from_day_dataframe(data.loc[pd.IndexSlice[:, date], :], plot_field=plot_field, filename_prefix=filename_prefix, min_rate=min_rate, max_rate=max_rate, colormap=colormap)
+        mi_generate_svg_from_day_dataframe(data.loc[pd.IndexSlice[:, date], :], plot_field=plot_field, legend_title=legend_title, filename_prefix=filename_prefix, min_rate=min_rate, max_rate=max_rate, colormap=colormap)
     return
-
-
-        
-        
-        
-        
-        
-        
