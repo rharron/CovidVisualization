@@ -98,6 +98,8 @@ def read_all_zcta_data(data_dir = '../coronavirus-data/'):
     # Drop data on 2020-04-26
     data = data[data['DATA_DATE']!='2020-04-26']
     
+    
+    
     return data
 
 def read_zcta_data_from_git(repo, commit7, data_date):
