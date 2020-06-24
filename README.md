@@ -7,13 +7,13 @@ This repository contains some python functions (in *svg_utilities.py*) for produ
 
 Here is an animation showing a plot of the 3-day (simple) moving average of the
 rate of change in Covid-19 case rates (per 100k people) as time varies from May
-20th to June 21st:
+20th to June 21st (click for a larger version):
 
 <img src="animations/NYC_covid_diff_SMA3_coolwarm_50.gif" alt="3-day moving average of the rate of change in Covid-19 rates (per 100k) in NYC" width="300">
 
 This animation allows us to see the localized spikes in Covid-19 cases.
 
-Here instead is the rate itself (May 19–June 21), which is much noisier:
+Here instead is the rate itself (May 19–June 21), which is much noisier (click for a larger version):
 
 <img src="animations/NYC_covid_diff_coolwarm_50.gif" alt="The rate of change in Covid-19 rates (per 100k) in NYC" width="300">
 
@@ -26,3 +26,8 @@ The following files contain sample scripts for working with our svg and data cle
 These are the files used to produce the svg images that went into the animations above. The gifs themselves were produced from the svg files using ImageMagick from the terminal like so:
 
     convert -delay 50 *.svg NYC_covid_diff_coolwarm_50.gif
+
+The following files are svg files created by our code:
+
+- [*NYC_COVID_CASE_RATE_DIFF_coolwarm_2020-06-21-00-00-00.svg*](NYC_COVID_CASE_RATE_DIFF_coolwarm_2020-06-21-00-00-00.svg)
+- [*NYC_COVID_CASE_RATE_DIFF_SMA3_coolwarm_2020-06-21-00-00-00.svg*](NYC_COVID_CASE_RATE_DIFF_SMA3_coolwarm_2020-06-21-00-00-00.svg)
