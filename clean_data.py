@@ -98,6 +98,13 @@ def read_all_zcta_data(data_dir = '../coronavirus-data/'):
     # Drop data on 2020-04-26
     data = data[data['DATA_DATE']!='2020-04-26']
     
+    # Only keep records with a non-null MODIFIED_ZCTA
+    data.dropna(subset=['MODIFIED_ZCTA'], inplace=True)
+    # Move MODIFIED_ZCTA and DATA_DATE to the index
+    data = data.astype({'MODIFIED_ZCTA' : int})
+    data.set_index(['MODIFIED_ZCTA','DATA_DATE'], inplace=True)
+    data.sort_index(inplace=True)
+        
     return data
 
 def read_zcta_data_from_git(repo, commit7, data_date):
