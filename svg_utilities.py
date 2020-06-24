@@ -11,7 +11,7 @@ Department's Covid-19 data.
 """
 
 
-import re
+import os, re
 import locale
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -211,7 +211,12 @@ def mi_generate_svg_from_day_dataframe(zcta_data, plot_field='COVID_CASE_RATE', 
         
         # Write out end segment of the file from the template, adding in date and max-min info
         template_out = template_file.readline()
-        date_str = "Date: %s"%(date.strftime("%b %-d, %Y"))
+        if os.name == 'nt':
+            # On Windows
+            date_str = "Date: %s"%(date.strftime("%b %#d, %Y"))
+        else:
+            date_str = "Date: %s"%(date.strftime("%b %-d, %Y"))
+            
         legend_title_str = "><tspan x=\"0\" dy=\"-1.2em\">"+ date_str + "</tspan><tspan x=\"0\" dy=\"1.4em\">" + legend_title + "</tspan>"
         template_out = re.sub(">Case Rate per 100k", legend_title_str, template_out)
         legend_title_str = "\'" + date_str + "; " + legend_title
