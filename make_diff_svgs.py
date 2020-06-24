@@ -12,6 +12,7 @@ there is data for each subsequent day.)
 The script creates a collection of svg files, one for each day.
 """
 
+import os
 import pandas as pd
 
 import svg_utilities
@@ -47,4 +48,13 @@ relevant_data = data[data.index.get_level_values(1).isin(date_indices)][pfd]
 print("There are %s data points above the threshhold; they will be cut off"%(len(relevant_data[relevant_data >= max_rate])))
 
 # Generate the svgs
-svg_utilities.mi_generate_multiple_svgs_from_one_dataframe(data.drop(index=date0, level=1), plot_field=pfd, legend_title='Change in Covid Case Rate per 100k', filename_prefix=pfd + '/NYC', colormap='coolwarm', dates=date_indices, min_rate=min_rate, max_rate=max_rate, verbose=True)
+# Make folder if it doesn't exist
+os.makedirs(name=pfd, exist_ok=True)
+svg_utilities.mi_generate_multiple_svgs_from_one_dataframe(data.drop(index=date0, level=1), 
+                                                           plot_field=pfd, 
+                                                           legend_title='Change in Covid Case Rate per 100k', 
+                                                           filename_prefix=pfd + '/NYC', colormap='coolwarm', 
+                                                           dates=date_indices, 
+                                                           min_rate=min_rate, 
+                                                           max_rate=max_rate, 
+                                                           verbose=True)
