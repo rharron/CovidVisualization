@@ -25,11 +25,6 @@ pfd = plot_field + '_DIFF'
 
 # Get data and clean it a bit more and make into a multiindex
 data = clean_data.read_all_zcta_data()
-data.dropna(subset=['MODIFIED_ZCTA'], inplace=True)
-data = data.astype({'MODIFIED_ZCTA' : int})
-
-data.set_index(['MODIFIED_ZCTA','DATA_DATE'], inplace=True)
-data.sort_index(inplace=True)
 
 # Compute discrete differences per ZCTA
 data[pfd] = data.groupby('MODIFIED_ZCTA')[plot_field].diff()

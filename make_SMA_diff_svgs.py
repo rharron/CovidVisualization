@@ -26,11 +26,6 @@ pfd = plot_field + '_DIFF_SMA%s'%(number_of_days)
 
 # Get data and clean it a bit more and make into a multiindex
 data = clean_data.read_all_zcta_data()
-data.dropna(subset=['MODIFIED_ZCTA'], inplace=True)
-data = data.astype({'MODIFIED_ZCTA' : int})
-
-data.set_index(['MODIFIED_ZCTA','DATA_DATE'], inplace=True)
-data.sort_index(inplace=True)
 
 # Compute discrete differences per ZCTA and simple moving average
 data[pfdiff] = data.groupby('MODIFIED_ZCTA')[plot_field].diff()
